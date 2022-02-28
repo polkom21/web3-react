@@ -160,19 +160,19 @@ export class InjectedConnector extends AbstractConnector {
     try {
       account = await window.ethereum.request({method: 'eth_requestAccounts'}).then(sendReturn => parseSendReturn(sendReturn)[0])
     } catch {
-      warning(false, 'eth_accounts was unsuccessful, falling back to enable')
+      warning(false, 'eth_requestAccounts was unsuccessful, falling back to enable')
     }
 
     if (!account) {
       try {
         account = await window.ethereum.enable().then(sendReturn => parseSendReturn(sendReturn)[0])
       } catch {
-        warning(false, 'enable was unsuccessful, falling back to eth_accounts v2')
+        warning(false, 'enable was unsuccessful, falling back to eth_requestAccounts v2')
       }
     }
 
     if (!account) {
-      account = parseSendReturn(window.ethereum.request({ method: 'eth_accounts' }))[0]
+      account = parseSendReturn(window.ethereum.request({ method: 'eth_requestAccounts' }))[0]
     }
 
     return account
@@ -193,7 +193,7 @@ export class InjectedConnector extends AbstractConnector {
     }
 
     try {
-      return await window.ethereum.request({method: 'eth_accounts'}).then(sendReturn => {
+      return await window.ethereum.request({method: 'eth_requestAccounts'}).then(sendReturn => {
         if (parseSendReturn(sendReturn).length > 0) {
           return true
         } else {
