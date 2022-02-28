@@ -54,14 +54,14 @@ export class InjectedConnector extends AbstractConnector {
 
   private handleClose(code: number, reason: string): void {
     if (__DEV__) {
-      console.log("Handling 'close' event with payload", code, reason)
+      console.log("Handling 'disconnect' event with payload", code, reason)
     }
     this.emitDeactivate()
   }
 
   private handleNetworkChanged(networkId: string | number): void {
     if (__DEV__) {
-      console.log("Handling 'networkChanged' event with payload", networkId)
+      console.log("Handling 'chainChanged' event with payload", networkId)
     }
     this.emitUpdate({ chainId: networkId, provider: window.ethereum })
   }
@@ -74,8 +74,8 @@ export class InjectedConnector extends AbstractConnector {
     if (window.ethereum.on) {
       window.ethereum.on('chainChanged', this.handleChainChanged)
       window.ethereum.on('accountsChanged', this.handleAccountsChanged)
-      window.ethereum.on('close', this.handleClose)
-      window.ethereum.on('networkChanged', this.handleNetworkChanged)
+      window.ethereum.on('disconnect', this.handleClose)
+      window.ethereum.on('chainChanged', this.handleNetworkChanged)
     }
 
     if ((window.ethereum as any).isMetaMask) {
@@ -85,7 +85,7 @@ export class InjectedConnector extends AbstractConnector {
     // try to activate + get account via eth_requestAccounts
     let account
     try {
-      account = await (window.ethereum.send as Send)('eth_requestAccounts').then(
+      account = await window.ethereum.request({method: 'eth_requestAccounts'}).then(
         sendReturn => parseSendReturn(sendReturn)[0]
       )
     } catch (error) {
@@ -98,7 +98,7 @@ export class InjectedConnector extends AbstractConnector {
     // if unsuccessful, try enable
     if (!account) {
       // if enable is successful but doesn't return accounts, fall back to getAccount (not happy i have to do this...)
-      account = await window.ethereum.enable().then(sendReturn => sendReturn && parseSendReturn(sendReturn)[0])
+      account = await window.ethereum.request({ method: 'eth_requestAccounts' }).then(sendReturn => sendReturn && parseSendReturn(sendReturn)[0])
     }
 
     return { provider: window.ethereum, ...(account ? { account } : {}) }
@@ -115,14 +115,14 @@ export class InjectedConnector extends AbstractConnector {
 
     let chainId
     try {
-      chainId = await (window.ethereum.send as Send)('eth_chainId').then(parseSendReturn)
+      chainId = await window.ethereum.request({method: 'eth_chainId'}).then(parseSendReturn)
     } catch {
       warning(false, 'eth_chainId was unsuccessful, falling back to net_version')
     }
 
     if (!chainId) {
       try {
-        chainId = await (window.ethereum.send as Send)('net_version').then(parseSendReturn)
+        chainId = await window.ethereum.request({method: 'net_version'}).then(parseSendReturn)
       } catch {
         warning(false, 'net_version was unsuccessful, falling back to net version v2')
       }
@@ -130,7 +130,7 @@ export class InjectedConnector extends AbstractConnector {
 
     if (!chainId) {
       try {
-        chainId = parseSendReturn((window.ethereum.send as SendOld)({ method: 'net_version' }))
+        chainId = parseSendReturn(window.ethereum.request({ method: 'net_version' }))
       } catch {
         warning(false, 'net_version v2 was unsuccessful, falling back to manual matches and static properties')
       }
@@ -158,7 +158,7 @@ export class InjectedConnector extends AbstractConnector {
 
     let account
     try {
-      account = await (window.ethereum.send as Send)('eth_accounts').then(sendReturn => parseSendReturn(sendReturn)[0])
+      account = await window.ethereum.request({method: 'eth_requestAccounts'}).then(sendReturn => parseSendReturn(sendReturn)[0])
     } catch {
       warning(false, 'eth_accounts was unsuccessful, falling back to enable')
     }
@@ -172,7 +172,7 @@ export class InjectedConnector extends AbstractConnector {
     }
 
     if (!account) {
-      account = parseSendReturn((window.ethereum.send as SendOld)({ method: 'eth_accounts' }))[0]
+      account = parseSendReturn(window.ethereum.request({ method: 'eth_accounts' }))[0]
     }
 
     return account
@@ -182,8 +182,8 @@ export class InjectedConnector extends AbstractConnector {
     if (window.ethereum && window.ethereum.removeListener) {
       window.ethereum.removeListener('chainChanged', this.handleChainChanged)
       window.ethereum.removeListener('accountsChanged', this.handleAccountsChanged)
-      window.ethereum.removeListener('close', this.handleClose)
-      window.ethereum.removeListener('networkChanged', this.handleNetworkChanged)
+      window.ethereum.removeListener('disconnect', this.handleClose)
+      window.ethereum.removeListener('chainChanged', this.handleNetworkChanged)
     }
   }
 
@@ -193,7 +193,7 @@ export class InjectedConnector extends AbstractConnector {
     }
 
     try {
-      return await (window.ethereum.send as Send)('eth_accounts').then(sendReturn => {
+      return await window.ethereum.request({method: 'eth_accounts'}).then(sendReturn => {
         if (parseSendReturn(sendReturn).length > 0) {
           return true
         } else {
