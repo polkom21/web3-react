@@ -2,7 +2,7 @@ import { AbstractConnectorArguments, ConnectorUpdate } from '@web3-react/types'
 import { AbstractConnector } from '@web3-react/abstract-connector'
 import warning from 'tiny-warning'
 
-import { SendReturnResult, SendReturn, Send, SendOld } from './types'
+import { SendReturnResult, SendReturn } from './types'
 
 function parseSendReturn(sendReturn: SendReturnResult | SendReturn): any {
   return sendReturn.hasOwnProperty('result') ? sendReturn.result : sendReturn
